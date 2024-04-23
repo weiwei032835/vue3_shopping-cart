@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
+    <link rel="shortcut icon" href="#"/>
+    <title>vue3_購物車006</title>
+    <style>
+         @import url(https://fonts.googleapis.com/earlyaccess/notosanstc.css);
+        *{font-family:'Noto Sans TC','微軟正黑體';}
+        *,*::before,*::after{margin:0px; padding:0px; -webkit-box-sizing:border-box; -moz-box-sizing:border-box; box-sizing:border-box;}
+        .clearfix:after{content:''; display:block; height:0; clear:both; visibility:hidden;}
+        body{width: 1200px;margin: 0 auto;}
+        #app{width:100%;max-width:900px;margin:0 auto;padding:20px;position:relative;border:10px solid #3fb27f;border-radius:5px;background-color:rgba(167, 167, 167, 0.2);margin-top:40px ;}
+        #app::after{content:"vue app esm";width:150px;height:30px;background:#3fb27f;text-align:center;font-weight:900;color:#fff;position:absolute;right:-10px;
+        top:-30px;border-radius:5px;}
+    
+        ul li{ list-style: none;}
+        h3{margin-bottom: 10px;}
+        
+        /*資訊版頭 ===========*/
+        ul.navbar{ width: 90%;margin-bottom: 20px; padding-left:10px;
+            display:flex; justify-content:space-between; font-size:16px; color:#5d5c5c; background-color:#fff; 
+            border-radius:3px; border:0px solid blue; }
+ 
+        ul.navbar li{text-align: center;}    
+    
+        /*由小排到大 ==========*/    
+        button.sort{margin-bottom: 10px;}    
+
+        /*商品 ===========*/
+        ul.product{width: 90%; display:flex; justify-content:space-between; background-color:#fff; border-radius:3px; padding-left:10px; margin-bottom: 20px;}/*margin:0 auto;*/
+    
+        /*商品內文*/
+        ul.product .item_info{width: 190px;}
+        ul.product li{display:flex; flex-direction:row; align-items:center;} 
+        
+        /*商品名*/   
+        ul.product li h4{ font-size: 16px; margin-left: 20px;}
+        
+        /*圖*/
+        li.item_info img{ width:80px; height:80px; border-radius:3px;}
+        
+        /*數量區*/
+        li.count button{ margin:0 5px; }
+    
+        /*商品內文*/
+        ul.cart-items .item_info{width: 40%;}
+        ul.cart-items li{display:flex; flex-direction:row;}     
+
+        /*總計*/
+        .sum{text-align: right;}
+
+        /*購物車清單 =================*/
+        .cart_menu{ width:60%; position:absolute; right:0px; top:50px; padding:10px; background:#fff; box-shadow:2px 2px 6px 0 rgba(0,0,0,0.3); z-index:10; }
+            
+        /*購物車 項目=================*/
+        ul.cart-items{ display:flex; justify-content:space-between; align-items:center; background-color:#fff; border-radius:3px; padding-left:10px; margin-bottom:20px; }
+
+        /*購物車icon =================*/    
+        .btn_cart{ position:absolute; right:0px; top:0px; padding:10px; background:#fff; }
+        .btn_cart img{ width:30px; }
+        .btn_cart .navbar{width: 100%;}
+
+        /*購物車商品列表*/
+        .cart .product{width: 100%;}
+        .cart .product .item_info img{width: 150px;}
+        .cart .product .item_info h4{width: 500px;}
+
+        /*空的顯示*/
+        .noneCart{ width:150px; position:absolute; right:0px; top:50px; color:white; background-color:rgb(34,34,34); }
+
+        /*購物車按鈕*/
+        .btn_cart{box-shadow:2px 2px 6px 0 rgba(0,0,0,0.3);border: none;}
+
+
+        </style>
+       
+</head>
+<body>
+    
+    
+    <!--應用程式 開始-->
+
+    <div id="app">
+        <h2>vue3 商品列表 加入購物車</h2>
+        <div class="container">
+            <h3>商品區</h3>
+
+            <!-- 版頭 開始-->
+            <ul class="navbar">
+                <li class="item_detail">商品</li>
+                <li class="price">單價</li>
+                <li class="count">數量</li>
+                <li class="amount">總計(購買數)</li>
+                <li class="operate">操作</li>
+            </ul>
+            <!-- 版頭 結束-->
+
+            <!-- 商品區 開始-->
+            <ul class="product" v-for="item in state.itemList" :key="item.id">
+                <!-- 商品資訊 開始-->
+                <li class="item_info">
+                    <img :src="item.imgUrl">
+                    <h4>{{item.itemName}}</h4>
+                </li>
+                <!-- 商品資訊 結束-->
+
+                <!-- 庫存 -->
+                <li> 
+                    <p>庫存:{{updateStock[item.id]}}</p>
+                </li>
+
+                <!-- 商品單價 -->
+                <li class="price"><p><span>$</span>{{item.price}}</p></li>
+               
+                <!-- 商品購買數 開始-->
+                <li>
+                    <button @click="item.count > 0 ? item.count-- : null">-</button>
+                    <p>{{item.count}}</p>
+                    <button @click="item.count < item.stock ? item.count++ : null">+</button>
+                </li>
+                <!-- 商品購買數 結束-->
+
+                <!-- 商品總計 -->
+                <li class="amount"><p>{{item.price * item.count}}</p></li>
+            
+                <!-- 加入購物車 -->
+                <li class="operate">
+                    <button @click="addToCart(item)"><p>加入購物車</p></button>
+                </li>
+
+            </ul>
+            <!-- 商品區 結束-->
+
+            <!-- 購物車按鈕 開始-->
+            <button class="btn_cart" @click="toggleCartMenu">目前:{{ getTotalItemCount()}}<img src="./images/shopping-cart.svg" alt=""></button>
+            <!-- 購物車按鈕 結束-->
+
+            <!--cart 開始-->
+            <div class="cart" v-show="showCartMenu">
+                <!--cart 結束-->
+                <div class="noneCart" v-if="state.cartList.length === 0">
+                    <p>購物車是空的!</p>
+                </div>
+            
+                <!-- 購物車清單 開始-->
+                <div class="cart_menu" v-if="state.cartList.length > 0" >
+                    <!-- 版頭 開始-->
+                    <ul class="navbar">
+                        <li class="item_detail">商品</li>
+                        <li class="price">單價</li>
+                        <li class="count">數量</li>
+                        <li class="amount">總計</li>
+                        <li class="operate">操作</li>
+                        <li class="sort">金額排序</li>
+                    </ul>
+                    <!-- 版頭 結束-->
+            
+                    <button class="sort" @click="sortCartByPrice">金額排序(由小到大)</button>
+            
+            
+            
+                    <!-- 商品 開始-->
+                    <div>
+                        <ul class="cart-items" v-for="item in state.cartList" :key="item.id" >
+                            <li class="item_info">
+                                <img :src="item.imgUrl" alt="">
+                                <h4>{{item.itemName}}</h4>
+                            </li>
+            
+                            <li class="price">
+                                <p><span>$</span>{{item.price}}</p>
+                            </li>
+                            <li class="count">
+                                <button @click="item.count > 0 ? item.count-- : null">-</button>
+                                <p>{{item.count}}</p>
+                                <button @click="item.count < item.stock ? item.count++ : null">+</button>
+                            </li>
+            
+                            <li class="amount">
+                                <p>{{item.price * item.count}}</p>
+                            </li>
+            
+                            <li class="operate">
+                                <button @click="fnRemoveCart(item)">
+                                    <p>❌</p>
+                                </button>
+                            </li>
+            
+                        </ul>
+                        <ul class="sum">
+                            <h3>總計:{{getTotalPrice()}}</h3>
+                        </ul>
+                        <button>結帳</button>
+                    </div>
+                    <!-- 商品 結束-->
+                </div>
+            </div>
+            <!-- 購物車 結束-->
+
+
+            
+
+        </div>
+    </div>
+    <!-- 應用程式 結束-->
+    
+    <script type="module">
+        import { createApp, reactive, ref, computed } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
+    
+        const app = createApp({
+            setup() {
+                //資料
+                const state = reactive({
+                    itemList: [
+                        {
+                            id: '81',
+                            itemName: '優質短袖白T',
+                            imgUrl: 'https://images.unsplash.com/photo-1534961880437-ce5ae2033053?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=668&q=80',
+                            price: 500,
+                            count: 1,
+                            stock:20,
+                        },
+                        {
+                            id: '82',
+                            itemName: '骷髏手短黑T',
+                            imgUrl: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1500&q=80',
+                            price: 790,
+                            count: 1,
+                            stock:5,
+                        },
+                        {
+                            id: '83',
+                            itemName: '超時尚牛仔庫',
+                            imgUrl: 'https://images.unsplash.com/photo-1529391409740-59f2cea08bc6?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1124&q=80',
+                            price: 1200,
+                            count: 1,
+                            stock:13,
+                        },
+                        {
+                            id: '84',
+                            itemName: '質感褐色系大衣服',
+                            imgUrl: 'https://images.unsplash.com/photo-1491998664548-0063bef7856c?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1500&q=80',
+                            price: 2300,
+                            count: 1,
+                            stock:20,
+                        },
+                    ],
+                    cartList: [],
+                });
+             
+                //加入購物車
+                const addToCart = (item) => {
+                    
+                    //找到同一筆
+                    const tmp = state.cartList.find(cartItem => cartItem.id === item.id);
+                    if(tmp){
+                        // 計算加入新商品後的總數量，但不超過庫存量
+                        tmp.count = Math.min(tmp.count + item.count, item.stock);
+                    }else{
+                        //新增一筆
+                        state.cartList.push({ ...item });
+                    }
+                    item.count = 1; //購買數歸零
+                }
+
+
+                // 更新每個商品剩餘數量
+                const updateStock = computed(() => {
+
+                    //減去數量
+                    const laveStock = {};
+                    // 複製商品庫存量
+                    for (const item of state.itemList) {
+                        laveStock[item.id] = item.stock;
+                    }
+                    // 計算購物車相同商品總數，並從庫存中減去
+                    for (const item of state.cartList) {
+                        if (laveStock[item.id]) {
+                            laveStock[item.id] -= item.count;
+                        }
+                    }
+                    return laveStock;
+                });
+
+                //按照金額排序
+                const sortedCartList = computed(()=>{
+                    //複製購物車內容
+                    const sortedList = [...state.sortCartList];
+                    //按照價格排序
+                    sortedList.sort((a,b)=>(b.price * b.count) - (a.price * a.count));
+                    return sortedList;
+                });
+
+                //按金額排序購物車(從小到大)
+                const sortCartByPrice = ()=>{
+                    state.cartList.sort((a, b) => (a.price * a.count) - (b.price * b.count));
+                }
+
+                //購物車toggle
+                const showCartMenu =  ref(false);
+                const toggleCartMenu =()=>{
+                    showCartMenu.value = !showCartMenu.value;
+                }
+
+                //購物車減一
+                const removeCartItem = (item) => {
+                    if (item.count > 1) {
+                        item.count--;
+                    }
+                }
+
+                //刪除購物車品項
+                const fnRemoveCart = (item) => {
+                    let index = state.cartList.indexOf(item);
+                    if (index !== -1) {
+                        state.cartList.splice(index, 1);
+                    }
+                };
+
+
+                //總計購物車數量
+                const getTotalItemCount =()=>{
+                    return state.cartList.reduce((total,item)=>total+item.count,0);
+                }
+                
+                //總計
+                const getTotalPrice = () => {
+                    let total = 0;
+                    for (let item of state.cartList) {
+                        total += item.price * item.count;
+                    }
+                    return total;
+                }
+                return { state, 
+                    addToCart, addToCart,  
+                    fnRemoveCart ,getTotalPrice,getTotalItemCount,removeCartItem,updateStock,sortCartByPrice , showCartMenu, toggleCartMenu 
+
+                };
+            }
+        });
+
+        app.mount("#app");
+    </script>
+</body>
+</html>
